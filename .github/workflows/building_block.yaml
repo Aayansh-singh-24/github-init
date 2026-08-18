@@ -1,20 +1,37 @@
 name: building-block
 
 on:
-  push:
-    branches:
-      - main
-  pull_request:
-    branches:
-      - main
+  workflow_dispatch:
+    
+
+# on:
+#   push:
+#     branches:
+#       - main
+#   pull_request:
+#     branches:
+#       - main
 
 jobs:
-  echo-hello:
+  system-info:
     runs-on: ubuntu-latest
     steps:
-      - name: Say Hello
-        run: echo "Hello, World!"
-  
+      - name: Get OS name and kernel version
+        run: 'echo "OS: $(uname -s), Kernel: $(uname -r)"'
+      
+      - name: disk space is free
+        run: 'echo "disk:  $(free -h)"'
+
+      - name : current date and time
+        run: 'echo "date and time:  $(date)"'
+
+      - name : Install tree
+        run : apt-install tree -y
+
+      - name : Folder Structure
+        run: 'echo "directory: $(tree /f)"'
+
+
   echo-goodbye:
     runs-on: ubuntu-latest
     steps:
