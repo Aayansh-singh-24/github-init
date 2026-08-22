@@ -1,0 +1,14 @@
+name: eventbuilder
+
+on:
+  pull_request:
+    types: opened
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+    echo:
+        runs-on: ubuntu-latest
+        steps:
+            - run: echo "Event Builder workflow triggered"
