@@ -1,0 +1,46 @@
+# name: Incident
+# run-name: Incident Workflow >-
+    
+# # DEBUG - ON || DEBUG - OFF 
+
+# on:
+#     workflow_dispatch:
+#         inputs:
+#             scan:
+#                 description: deep_scan
+#                 required: false
+#                 default: false
+#                 type: boolean
+
+#             skip_tests:
+#                 description: 'Skip automated tests'
+#                 required: false
+#                 default: false
+#                 type: boolean
+
+#             reason:
+#                 description: 'Reason for triggering the workflow'
+#                 required: false
+#                 default: 'No reason provided'
+#                 type: string
+            
+        
+# jobs:
+#     echo:
+#         runs-on: ubuntu-latest
+#         steps:
+#             - name: "{Debug} Print Startup Data"
+#               run: |
+#                 echo "Trigger by: ${{ github.event_name }}"
+#                 echo "Branch: ${{ github.ref_name }}"
+#                 echo "Commit SHA: ${{ github.sha }}"
+#                 echo "Actor: ${{ github.actor }}"
+#                 echo "Runner os: ${{ runner.os }}"
+#                 echo "workflow: ${{ github.workflow }}"
+#             - name: "{Debug} Print Environment Variables"
+#               if: inputs.debug && github.ref_name == 'main'
+#               run: |
+#                 echo "This workflow is running on the main branch and debug is enabled"
+#             - name: Greeting
+#               run: |
+#                 echo "Hello, ${{ github.actor }}! Welcome to the Incident workflow."
