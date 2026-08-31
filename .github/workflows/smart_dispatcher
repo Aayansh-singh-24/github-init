@@ -1,0 +1,166 @@
+name: Smart Dispatcher
+
+run-name: ${{ format(
+  'Risk {0} | Owner {1}{2}',
+  inputs.risk_level == 'low' && 'LOW' ||
+  inputs.risk_level == 'medium' && 'MEDIUM' ||
+  inputs.risk_level == 'high' && 'HIGH' ||
+  'CRITICAL',
+  inputs.owner,
+  inputs.dry_run && ' | DRY-RUN' || ''
+) }}
+
+on:
+  workflow_dispatch:
+    inputs:
+      risk_level:
+        description: "Risk level"
+        required: true
+        type: choice
+        options:
+          - low
+          - medium
+          - high
+          - critical
+        default: low
+
+      notify:
+        description: "Notify on-call engineer"
+        required: true
+        type: boolean
+        default: false
+
+      dry_run:
+        description: "Run in dry-run mode"
+        required: true
+        type: boolean
+        default: false
+
+      owner:
+        description: "Owner"
+        required: false
+        type: string
+
+      components:
+        description: "Comma-separated components"
+        required: false
+        type: string
+
+
+jobs:
+
+  classify:
+    name: Classify
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Print components
+        run: |
+          echo "Components: ${{ inputs.components }}"
+
+      - name: Check database
+        run: |
+          if [[ "${{ inputs.components }}" == *"database"* ]]; then
+            echo "Contains database: true"
+          else
+            echo "Contains database: false"
+          fi
+
+      - name: Check auth
+        run: |
+          if [[ "${{ inputs.components }}" == *"auth"* ]]; then
+            echo "Contains auth: true"
+          else
+            echo "Contains auth: false"
+          fi
+
+      - name: Demonstrate startsWith and endsWith
+        run: |
+          echo "Owner starts with capital A: ${{ startsWith(inputs.owner, 'A') }}"
+          echo "Components end with comma: ${{ endsWith(inputs.components, ',') }}"
+
+      - name: Natural classification sentence
+        run: |
+          echo "${{ format(
+            'Dispatcher classified a {0} risk owned by {1} affecting components: {2}.',
+            inputs.risk_level,
+            inputs.owner,
+            inputs.components
+          ) }}"
+
+
+  gate:
+    name: Gate
+    needs: classify
+    runs-on: ubuntu-latest
+
+    steps:
+
+      - name: High/Critical database gate
+        if: ${{ (inputs.risk_level == 'high' || inputs.risk_level == 'critical') && contains(inputs.components, 'database') }}
+        run: |
+          echo "Gate passed: risk is high or critical AND components include database."
+
+      - name: Critical or notify gate
+        if: ${{ inputs.risk_level == 'critical' || inputs.notify == true }}
+        run: |
+          echo "Gate passed: risk is critical OR notification is enabled."
+
+      - name: Non-low live execution gate
+        if: ${{ !inputs.dry_run && inputs.risk_level != 'low' }}
+        run: |
+          echo "Gate passed: dry_run is disabled AND risk is not low."
+
+
+  execute:
+    name: Execute
+    needs: gate
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+
+    steps:
+
+      - name: Step A - Dry run failure
+        id: dry_run_step
+        if: ${{ inputs.dry_run }}
+        run: |
+          echo "Dry run requested. Simulating forced failure."
+          exit 1
+
+      - name: Step B - Stop after dry-run failure
+        if: ${{ failure() }}
+        run: |
+          echo "Dry run stopped before execution"
+
+      - name: Step C - Proceed with execution
+        if: ${{ success() && !failure() }}
+        run: |
+          echo "Execution proceeded"
+
+      - name: Step D - Status summary
+        if: ${{ always() }}
+        run: |
+          echo "Gate status: ${{ needs.gate.result }}"
+          echo "Execute status so far: ${{ job.status }}"
+
+
+  close:
+    name: Close
+    needs: [classify, gate, execute]
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+
+    steps:
+
+      - name: Final summary
+        run: |
+          echo "${{ format(
+            'Risk {0} | Owner {1} | Dry run: {2} | CLOSED',
+            inputs.risk_level,
+            inputs.owner,
+            inputs.dry_run
+          ) }}"
+
+      - name: Dispatcher closed
+        run: |
+          echo "Dispatcher closed"
